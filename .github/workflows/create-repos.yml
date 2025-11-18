@@ -1,22 +1,109 @@
-name: "Create Repo"
-
 on:
   workflow_dispatch:
     inputs:
-      visibility:
+      repo_name:
+        description: "The name of the repository to create"
+        required: true
+      repo_description:
+        description: "The description of the repository to create"
+        required: true
+      repo_visibility:
+        description: "The visibility of the repository to create"
         type: "choice"
+        default: "internal"
         options:
-          - private
-          - public
           - internal
+          - private
+        required: true
+      maintainer_team_name:
+        description: "The name of the maintainer team to add to the repository"
+        type: "string"
+        required: false
+      developer_team_name:
+        description: "The name of the developer team to add to the repository"
+        type: "string"
+        required: false
+      package_type:
+        description: "The type of package to create"
+        type: "choice"
+        default: "npm"
+        options:
+          - npm
+          - nuget
+          - j2ee
+          - terraform
+          - base
+      create_jfrog_repos:
+        description: "Are corresponding JFrog repositories to be created?"
+        type: "boolean"
+        default: true
+        required: true
 
-env:
-  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  build:
+  create-repo:
     runs-on: ubuntu-latest
     steps:
-      - name: "Create a repo"
+      - name: Create GitHub repo
         run: |
-          gh repo create ${{ github.repository_owner }}/test-${{ github.event.inputs.visibility }} -d test-${{ github.event.inputs.visibility }} --${{ github.event.inputs.visibility }}
+          # TODO: Check repo name
+          gh repo create ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} \
+            -d ${{ github.event.inputs.repo_description }} \
+            --${{ github.event.inputs.repo_visibility }} \
+            -p ${{ github.repository_owner }}/template-${{ github.event.inputs.package_type }}
+
+      - name: Setup JFrog CLI
+        uses: jfrog/setup-jfrog-cli@v4
+        if: ${{ github.event.inputs.create_jfrog_repos }}
+        env:  
+          JF_URL: ${{ vars.ARTIFACTORY_URL }}
+        with:
+          oidc-provider-name: github
+      
+      - name: Create JFrog repos
+        if: ${{ github.event.inputs.create_jfrog_repos }}
+        run: |
+          stages=("dev" "qa" "uat" "prod")
+
+          declare -A repo_layouts=( ["npm"]="npm-default" ["nuget"]="nuget-default" ["j2ee"]="maven-2-default")
+
+          repo_layout="${repo_layouts[${{ github.event.inputs.package_type }}]}"
+          if [[ -z $repo_layout ]]; then
+            repo_layout="simple-default"
+          fi
+
+          for stage in "${stages[@]}"; do
+            env=$(echo "$stage" | tr '[:lower:]' '[:upper:]')
+            repo_name="${{ github.event.inputs.repo_name }}-$stage"
+            repo_description="$env repository for ${{ github.event.inputs.repo_name }}"
+            echo "Creating jfrog repository for stage: $stage"
+            echo "Checking if repository '$repo_name' exists..."
+
+            if jfrog rt curl -XGET "/api/repositories/$repo_name" --silent --fail > /dev/null 2>&1; then
+              echo "Repository '$repo_name' already exists. Skipping creation."
+
+            else
+              echo "Repository '$repo_name' does not exist. Creating..."
+
+              cat > repo-config-${stage}.json <<EOF
+              {
+                "key": "$repo_name",
+                "rclass": "local",
+                "packageType": "${{ github.event.inputs.package_type }}",
+                "description": "$repo_description",
+                "repoLayoutRef": "$repo_layout",
+                "environments": "$env"
+              }
+              EOF
+
+              if jfrog rt repo-create repo-config-${stage}.json --fail; then
+                echo "Repository '$repo_name' created successfully."
+              else
+                echo "Failed to create repository '$repo_name'."
+                exit 1
+              fi
+            fi
+          done
