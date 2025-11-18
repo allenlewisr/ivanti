@@ -1,0 +1,19 @@
+name: "Create Repo"
+
+on:
+  workflow_dispatch:
+    inputs:
+      visibility:
+        type: "choice"
+        options:
+          - private
+          - public
+          - internal
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Create a repo"
+        run: |
+          gh create repo test-${{ github.events.input.visibility }} -d test-${{ github.events.input.visibility }} --${{ github.events.input.visibility }}
