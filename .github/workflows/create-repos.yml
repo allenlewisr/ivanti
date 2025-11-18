@@ -100,7 +100,7 @@ jobs:
           }
           EOF
 
-              if jfrog rt repo-create repo-config-${stage}.json --fail; then
+              if jfrog rt repo-create repo-config-${stage}.json; then
                 echo "Repository '$repo_name' created successfully."
               else
                 echo "Failed to create repository '$repo_name'."
