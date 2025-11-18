@@ -53,6 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub repo
+        if: ${{ github.event.inputs.create_github_repo }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
