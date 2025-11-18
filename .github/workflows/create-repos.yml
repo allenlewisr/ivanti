@@ -48,6 +48,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create GitHub repo
+        env:
+          GH_TOKEN: secrets.GH_TOKEN
         run: |
           # TODO: Check repo name
           gh repo create ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} \
