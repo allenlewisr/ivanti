@@ -90,15 +90,15 @@ jobs:
               echo "Repository '$repo_name' does not exist. Creating..."
 
               cat > repo-config-${stage}.json <<EOF
-              {
-                "key": "$repo_name",
-                "rclass": "local",
-                "packageType": "${{ github.event.inputs.package_type }}",
-                "description": "$repo_description",
-                "repoLayoutRef": "$repo_layout",
-                "environments": "$env"
-              }
-              EOF
+            {
+              "key": "$repo_name",
+              "rclass": "local",
+              "packageType": "${{ github.event.inputs.package_type }}",
+              "description": "$repo_description",
+              "repoLayoutRef": "$repo_layout",
+              "environments": "$env"
+            }
+            EOF
 
               if jfrog rt repo-create repo-config-${stage}.json --fail; then
                 echo "Repository '$repo_name' created successfully."
