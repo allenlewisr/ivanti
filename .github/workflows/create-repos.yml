@@ -19,4 +19,4 @@ jobs:
     steps:
       - name: "Create a repo"
         run: |
-          gh repo create test-${{ github.events.input.visibility }} -d test-${{ github.events.input.visibility }} --${{ github.events.input.visibility }}
+          gh repo create test-${{ github.event.inputs.visibility }} -d test-${{ github.event.inputs.visibility }} --${{ github.event.inputs.visibility }}
