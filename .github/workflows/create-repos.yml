@@ -1,12 +1,17 @@
 on:
   workflow_dispatch:
     inputs:
+      create_github_repo:
+        description: "Should a GitHub repo be created?"
+        required: true
+        default: true
+        type: "boolean"
       repo_name:
-        description: "The name of the repository to create"
+        description: "The name of the repository to create/use"
         required: true
       repo_description:
         description: "The description of the repository to create"
-        required: true
+        required: false
       repo_visibility:
         description: "The visibility of the repository to create"
         type: "choice"
@@ -51,7 +56,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # TODO: Check repo name
+          # TODO: Check repo name and description
           gh repo create ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} \
             -d ${{ github.event.inputs.repo_description }} \
             --${{ github.event.inputs.repo_visibility }} \
