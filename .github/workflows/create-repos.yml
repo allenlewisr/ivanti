@@ -58,8 +58,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           # Check if repository already exists
-          gh repo view ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}
-          if gh repo view ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} > /dev/null 2>&1; then
+          if gh api /repos/${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} > /dev/null 2>&1; then
             echo "Repository '${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}' already exists. Skipping creation."
           else
             echo "Repository '${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}' does not exist. Creating..."
