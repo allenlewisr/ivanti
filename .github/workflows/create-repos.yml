@@ -57,11 +57,62 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # TODO: Check repo name and description
-          gh repo create ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} \
-            -d ${{ github.event.inputs.repo_description }} \
-            --${{ github.event.inputs.repo_visibility }} \
-            -p ${{ github.repository_owner }}/template-${{ github.event.inputs.package_type }}
+          # Check if repository already exists
+          if gh repo view ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} > /dev/null 2>&1; then
+            echo "Repository '${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}' already exists. Skipping creation."
+          else
+            echo "Repository '${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}' does not exist. Creating..."
+            gh repo create ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} \
+              -d "${{ github.event.inputs.repo_description }}" \
+              --${{ github.event.inputs.repo_visibility }} \
+              -p ${{ github.repository_owner }}/template-${{ github.event.inputs.package_type }}
+            echo "Repository created successfully."
+          fi
+
+      - name: Attach permissions
+        if: ${{ github.event.inputs.create_github_repo == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          # Process maintainer team
+          if [[ -n "${{ github.event.inputs.maintainer_team_name }}" ]]; then
+            echo "Checking if maintainer team '${{ github.event.inputs.maintainer_team_name }}' exists..."
+            
+            if gh api /orgs/${{ github.repository_owner }}/teams/${{ github.event.inputs.maintainer_team_name }} > /dev/null 2>&1; then
+              echo "Team '${{ github.event.inputs.maintainer_team_name }}' exists. Adding 'maintain' permission to repository..."
+              
+              if gh api -X PUT /orgs/${{ github.repository_owner }}/teams/${{ github.event.inputs.maintainer_team_name }}/repos/${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} -f permission=maintain > /dev/null 2>&1; then
+                echo "Successfully added 'maintain' permission for team '${{ github.event.inputs.maintainer_team_name }}'."
+              else
+                echo "Failed to add permission for team '${{ github.event.inputs.maintainer_team_name }}'."
+                exit 1
+              fi
+            else
+              echo "Team '${{ github.event.inputs.maintainer_team_name }}' does not exist. Skipping."
+            fi
+          else
+            echo "No maintainer team specified. Skipping maintainer team permission assignment."
+          fi
+
+          # Process developer team
+          if [[ -n "${{ github.event.inputs.developer_team_name }}" ]]; then
+            echo "Checking if developer team '${{ github.event.inputs.developer_team_name }}' exists..."
+            
+            if gh api /orgs/${{ github.repository_owner }}/teams/${{ github.event.inputs.developer_team_name }} > /dev/null 2>&1; then
+              echo "Team '${{ github.event.inputs.developer_team_name }}' exists. Adding 'push' permission to repository..."
+              
+              if gh api -X PUT /orgs/${{ github.repository_owner }}/teams/${{ github.event.inputs.developer_team_name }}/repos/${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} -f permission=push > /dev/null 2>&1; then
+                echo "Successfully added 'push' permission for team '${{ github.event.inputs.developer_team_name }}'."
+              else
+                echo "Failed to add permission for team '${{ github.event.inputs.developer_team_name }}'."
+                exit 1
+              fi
+            else
+              echo "Team '${{ github.event.inputs.developer_team_name }}' does not exist. Skipping."
+            fi
+          else
+            echo "No developer team specified. Skipping developer team permission assignment."
+          fi
 
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
