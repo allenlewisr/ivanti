@@ -116,13 +116,13 @@ jobs:
 
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
-        if: ${{ github.event.inputs.create_jfrog_repos }}
+        if: ${{ github.event.inputs.create_jfrog_repos == 'true' }}
         env:  
           JF_URL: ${{ vars.ARTIFACTORY_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_BUILD_ROLE }}
       
       - name: Create JFrog repos
-        if: ${{ github.event.inputs.create_jfrog_repos }}
+        if: ${{ github.event.inputs.create_jfrog_repos == 'true' }}
         run: |
           stages=("dev" "qa" "uat" "prod")
 
