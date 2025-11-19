@@ -28,6 +28,11 @@ on:
         description: "The name of the developer team to add to the repository"
         type: "string"
         required: false
+      create_jfrog_repos:
+        description: "Are corresponding JFrog repositories to be created?"
+        type: "boolean"
+        default: true
+        required: true
       package_type:
         description: "The type of package to create"
         type: "choice"
@@ -38,11 +43,6 @@ on:
           - j2ee
           - terraform
           - base
-      create_jfrog_repos:
-        description: "Are corresponding JFrog repositories to be created?"
-        type: "boolean"
-        default: true
-        required: true
 
 permissions:
   id-token: write
