@@ -1,0 +1,10 @@
+name: Test environments
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: qa
+    steps:
+      - name: Test
+        run: echo "Testing..."
