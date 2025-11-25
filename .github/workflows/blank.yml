@@ -23,4 +23,4 @@ jobs:
     steps:
       - name: Test
         run: |
-          echo "Promote ${{ inputs.release_bundle_version }} to ${{ inputs.target_env }}
+          echo "Promote ${{ inputs.release_bundle_version }} to ${{ inputs.target_env }}"
