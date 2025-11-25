@@ -1,5 +1,5 @@
 name: Test workflow names
-run-name: Promote ${{ inputs.release_bundle_version }} to ${{ inputs.target_env}
+run-name: Promote ${{ inputs.release_bundle_version }} to ${{ inputs.target_env }}
 on:
   workflow_dispatch:
     inputs:
