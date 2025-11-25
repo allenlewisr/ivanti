@@ -1,10 +1,26 @@
-name: Test environments
+name: Test workflow names
+run-name: Promote ${{ inputs.release_bundle_version }} to ${{ inputs.target_env}
 on:
   workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Target environment to promote the bundle to"
+        required: true
+        default: "QA"
+        type: choice
+        options:
+          - DEV
+          - QA
+          - UAT
+          - PROD
+      release_bundle_version:
+        description: "Version of the release bundle"
+        required: true
+        type: string
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: qa
     steps:
       - name: Test
-        run: echo "Testing..."
+        run: |
+          echo "Promote ${{ inputs.release_bundle_version }} to ${{ inputs.target_env }}
