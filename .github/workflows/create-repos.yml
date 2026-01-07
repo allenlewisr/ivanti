@@ -1,142 +1,113 @@
+name: Create Github/JFrog Repository 
+
 on:
-  workflow_dispatch:
-    inputs:
-      create_github_repo:
-        description: "Should a GitHub repo be created?"
-        required: true
-        default: true
-        type: "boolean"
-      repo_name:
-        description: "The name of the repository to create/use"
-        required: true
-      repo_description:
-        description: "The description of the repository to create"
-        required: false
-      repo_visibility:
-        description: "The visibility of the repository to create"
-        type: "choice"
-        default: "internal"
-        options:
-          - internal
-          - private
-        required: true
-      maintainer_team_name:
-        description: "The name of the maintainer team to add to the repository"
-        type: "string"
-        required: false
-      developer_team_name:
-        description: "The name of the developer team to add to the repository"
-        type: "string"
-        required: false
-      create_jfrog_repos:
-        description: "Are corresponding JFrog repositories to be created?"
-        type: "boolean"
-        default: true
-        required: true
-      package_type:
-        description: "The type of package to create"
-        type: "choice"
-        default: "npm"
-        options:
-          - npm
-          - nuget
-          - j2ee
-          - terraform
-          - base
+  repository_dispatch:
+    
+    types: [Create_Repos_Repository_Event]
+
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  create-repo:
+  create-repo-repository-dispatch:
     runs-on: ubuntu-latest
     steps:
+      - name: Show Payload Variables
+        run: |
+          
+          echo "Create GitHub repo: ${{ github.event.client_payload.sr.create_github_repo }}"
+          echo "Repo Name: ${{ github.event.client_payload.sr.repo_name }}"
+          echo "Repo Description: ${{ github.event.client_payload.sr.repo_description }}"
+          echo "Repo Visibility: ${{ github.event.client_payload.sr.repo_visibility }}"          
+          echo "Team Name: ${{ github.event.client_payload.sr.maintainer_team_name }}"
+          echo "Create JFrog Repos: ${{ github.event.client_payload.sr.create_jfrog_repos }}"
+          echo "Package type: ${{ github.event.client_payload.sr.package_type }}"
+          echo "ServiceReq #: ${{ github.event.client_payload.sr.SRid }}"
+          echo "Server URL: ${{ github.event.client_payload.sr.serverurl }}"
+          echo "Recid: ${{ github.event.client_payload.sr.recid }}"
+
+
       - name: Create GitHub repo
-        if: ${{ github.event.inputs.create_github_repo == 'true' }}
+        
+        if: ${{ github.event.client_payload.sr.create_github_repo == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Check if repository already exists
-          if gh api /repos/${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} > /dev/null 2>&1; then
-            echo "Repository '${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}' already exists. Skipping creation."
+          REPO_NAME="${{ github.event.client_payload.sr.repo_name }}"
+          REPO_DESC="${{ github.event.client_payload.sr.repo_description }}"
+          REPO_VISIBILITY="${{ github.event.client_payload.sr.repo_visibility }}"
+          PACKAGE_TYPE="${{ github.event.client_payload.sr.package_type }}"
+
+          
+          if gh api /repos/${{ github.repository_owner }}/$REPO_NAME > /dev/null 2>&1; then
+            echo "Repository '${{ github.repository_owner }}/$REPO_NAME' already exists. Skipping creation."
           else
-            echo "Repository '${{ github.repository_owner }}/${{ github.event.inputs.repo_name }}' does not exist. Creating..."
-            gh repo create ${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} \
-              -d "${{ github.event.inputs.repo_description }}" \
-              --${{ github.event.inputs.repo_visibility }} \
-              -p ${{ github.repository_owner }}/template-${{ github.event.inputs.package_type }}
+            echo "Repository '${{ github.repository_owner }}/$REPO_NAME' does not exist. Creating..."
+            gh repo create ${{ github.repository_owner }}/$REPO_NAME \
+              -d "$REPO_DESC" \
+              --$REPO_VISIBILITY \
+              -p ${{ github.repository_owner }}/template-$PACKAGE_TYPE
             echo "Repository created successfully."
           fi
 
       - name: Attach permissions
-        if: ${{ github.event.inputs.create_github_repo == 'true' }}
+        if: ${{ github.event.client_payload.sr.create_github_repo == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          # Process maintainer team
-          if [[ -n "${{ github.event.inputs.maintainer_team_name }}" ]]; then
-            echo "Checking if maintainer team '${{ github.event.inputs.maintainer_team_name }}' exists..."
-            
-            if gh api /orgs/${{ github.repository_owner }}/teams/${{ github.event.inputs.maintainer_team_name }} > /dev/null 2>&1; then
-              echo "Team '${{ github.event.inputs.maintainer_team_name }}' exists. Adding 'maintain' permission to repository..."
-              
-              if gh api -X PUT /orgs/${{ github.repository_owner }}/teams/${{ github.event.inputs.maintainer_team_name }}/repos/${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} -f permission=maintain > /dev/null 2>&1; then
-                echo "Successfully added 'maintain' permission for team '${{ github.event.inputs.maintainer_team_name }}'."
-              else
-                echo "Failed to add permission for team '${{ github.event.inputs.maintainer_team_name }}'."
-                exit 1
-              fi
-            else
-              echo "Team '${{ github.event.inputs.maintainer_team_name }}' does not exist. Skipping."
-            fi
-          else
-            echo "No maintainer team specified. Skipping maintainer team permission assignment."
-          fi
+          REPO_NAME="${{ github.event.client_payload.sr.repo_name }}"
+          OWNER="${{ github.repository_owner }}"
+          TEAM_NAME="${{ github.event.client_payload.sr.maintainer_team_name }}"
 
-          # Process developer team
-          if [[ -n "${{ github.event.inputs.developer_team_name }}" ]]; then
-            echo "Checking if developer team '${{ github.event.inputs.developer_team_name }}' exists..."
-            
-            if gh api /orgs/${{ github.repository_owner }}/teams/${{ github.event.inputs.developer_team_name }} > /dev/null 2>&1; then
-              echo "Team '${{ github.event.inputs.developer_team_name }}' exists. Adding 'push' permission to repository..."
-              
-              if gh api -X PUT /orgs/${{ github.repository_owner }}/teams/${{ github.event.inputs.developer_team_name }}/repos/${{ github.repository_owner }}/${{ github.event.inputs.repo_name }} -f permission=push > /dev/null 2>&1; then
-                echo "Successfully added 'push' permission for team '${{ github.event.inputs.developer_team_name }}'."
+          
+          if [[ -n "$TEAM_NAME" ]]; then
+            echo "Checking if team '$TEAM_NAME' exists..."
+
+            if gh api /orgs/$OWNER/teams/$TEAM_NAME > /dev/null 2>&1; then
+              echo "Team '$TEAM_NAME' exists. Adding 'maintain' permission to repository..."
+
+              if gh api -X PUT /orgs/$OWNER/teams/$TEAM_NAME/repos/$OWNER/$REPO_NAME -f permission=maintain > /dev/null 2>&1; then
+                echo "Successfully added 'maintain' permission for team '$TEAM_NAME'."
               else
-                echo "Failed to add permission for team '${{ github.event.inputs.developer_team_name }}'."
+                echo "Failed to add permission for team '$TEAM_NAME'."
                 exit 1
               fi
             else
-              echo "Team '${{ github.event.inputs.developer_team_name }}' does not exist. Skipping."
+              echo "Team '$TEAM_NAME' does not exist. Skipping."
             fi
           else
-            echo "No developer team specified. Skipping developer team permission assignment."
+            echo "No team specified. Skipping team permission assignment."
           fi
 
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
-        if: ${{ github.event.inputs.create_jfrog_repos == 'true' }}
-        env:  
+        if: ${{ github.event.client_payload.sr.create_jfrog_repos == 'true' }}
+        env:
           JF_URL: ${{ vars.ARTIFACTORY_URL }}
           JF_ACCESS_TOKEN: ${{ secrets.JFROG_ARTIFACTORY_BUILD_ROLE }}
-      
+
       - name: Create JFrog repos
-        if: ${{ github.event.inputs.create_jfrog_repos == 'true' }}
+        if: ${{ github.event.client_payload.sr.create_jfrog_repos == 'true' }}
         run: |
           stages=("dev" "qa" "uat" "prod")
 
+          
           declare -A repo_layouts=( ["npm"]="npm-default" ["nuget"]="nuget-default" ["j2ee"]="maven-2-default")
 
-          repo_layout="${repo_layouts[${{ github.event.inputs.package_type }}]}"
+          repo_layout="${repo_layouts[${{ github.event.client_payload.sr.package_type }}]}"
           if [[ -z $repo_layout ]]; then
             repo_layout="simple-default"
           fi
 
           for stage in "${stages[@]}"; do
             env=$(echo "$stage" | tr '[:lower:]' '[:upper:]')
-            repo_name="${{ github.event.inputs.repo_name }}-$stage"
-            repo_description="$env repository for ${{ github.event.inputs.repo_name }}"
+            REPO_NAME_PAYLOAD="${{ github.event.client_payload.sr.repo_name }}"
+            repo_name="$REPO_NAME_PAYLOAD-$stage"
+            repo_description="$env repository for $REPO_NAME_PAYLOAD"
+            PACKAGE_TYPE="${{ github.event.client_payload.sr.package_type }}"
+
             echo "Creating jfrog repository for stage: $stage"
             echo "Checking if repository '$repo_name' exists..."
 
@@ -150,7 +121,7 @@ jobs:
           {
             "key": "$repo_name",
             "rclass": "local",
-            "packageType": "${{ github.event.inputs.package_type }}",
+            "packageType": "$PACKAGE_TYPE",
             "description": "$repo_description",
             "repoLayoutRef": "$repo_layout",
             "environments": "$env"
@@ -165,3 +136,70 @@ jobs:
               fi
             fi
           done
+
+
+      - name: Ivanti Update Ticket on Success
+        if: success()
+        shell: bash
+        run: |
+          SERVER_URL="${{ github.event.client_payload.sr.serverurl }}"
+          RECID="${{ github.event.client_payload.sr.recid }}"
+          REPO_NAME="${{ github.event.client_payload.sr.repo_name }}"
+
+          curl -X PUT "https://$SERVER_URL/api/odata/businessobject/servicereqs('$RECID')" \
+          -H "Authorization: rest_api_key=${{ secrets.IVANTI_API_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d "$(jq -n --arg status "Fulfilled" --arg resolution "Repo created successful for $REPO_NAME" \
+              '{Status: $status, Resolution: $resolution}')"
+
+
+
+      - name: Ivanti Update Ticket on Failure
+        if: failure()
+        shell: bash
+        run: |
+          SERVER_URL="${{ github.event.client_payload.sr.serverurl }}"
+          RECID="${{ github.event.client_payload.sr.recid }}"
+          REPO_NAME="${{ github.event.client_payload.sr.repo_name }}"
+
+          curl -X PUT "https://$SERVER_URL/api/odata/businessobject/servicereqs('$RECID')" \
+          -H "Authorization: rest_api_key=${{ secrets.IVANTI_API_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d "$(jq -n --arg status "Error" --arg resolution "Repo creation failed for $REPO_NAME" \
+              '{Status: $status, Resolution: $resolution}')"
+
+      - name: Ivanti Add Task on Failure
+        if: failure()
+        shell: bash
+        run: |
+          APP_NAME="${{ github.event.client_payload.sr.repo_name }}"
+          RECID="${{ github.event.client_payload.sr.recid }}"
+          TOKEN="${{ secrets.IVANTI_API_TOKEN }}"
+          SERVER_URL="${{ github.event.client_payload.sr.serverurl }}"
+
+
+          payload=$(jq -n \
+          --arg subject "Investigate failure for $APP_NAME" \
+          --arg details "Repo creation failed. Please check logs and retry." \
+          --arg parentRecId "$RECID" \
+          --arg category "ServiceReq" \
+          --arg priority "3" \
+          --arg status "Logged" \
+          --arg ownerTeam "ISM Admins" \
+          --arg service "Incident" \
+          '{
+          ParentLink_RecID: $parentRecId,
+          ParentLink_Category: $category,
+          Subject: $subject,
+          Details: $details,
+          Priority: $priority,
+          Status: $status,
+          OwnerTeam: $ownerTeam,
+          Service: $service
+          }')
+
+          curl -X POST "https://$SERVER_URL/api/odata/businessobject/task__assignments" \
+          -H "Authorization: rest_api_key=$TOKEN" \
+          -H "Content-Type: application/json" \
+          -H "Content-Length: ${#payload}" \
+          -d "$payload"
