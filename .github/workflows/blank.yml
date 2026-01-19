@@ -22,14 +22,14 @@ jobs:
         run: |
           echo "SUMMARY=" >> $GITHUB_ENV
 
-          if ${{ github.event.e1 }}; then
+          if ${{ inputs.e1 }}; then
             echo "SUMMARY=$SUMMARY\nE1" >> $GITHUB_ENV
             echo "ERROR=1" >> $GITHUB_ENV
           fi
 
       - name: Check E2
         run: |
-          if ${{ github.event.e2 }}; then
+          if ${{ inputs.e2 }}; then
             echo "SUMMARY=$SUMMARY\nE2" >> $GITHUB_ENV
             echo "ERROR=1" >> $GITHUB_ENV
           fi
