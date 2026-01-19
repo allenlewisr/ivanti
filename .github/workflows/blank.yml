@@ -36,7 +36,7 @@ jobs:
 
       - name: Summary
         run: |
-          if $ERROR; then
+          if [[ $ERROR -eq 1 ]]; then
             echo "Error occurred during execution"
           fi
           echo "$SUMMARY"
