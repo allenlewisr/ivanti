@@ -39,4 +39,4 @@ jobs:
           if [[ $ERROR -eq 1 ]]; then
             echo "Error occurred during execution"
           fi
-          echo "$SUMMARY"
+          echo -e "$SUMMARY"
