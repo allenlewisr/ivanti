@@ -1,26 +1,75 @@
-name: Test workflow names
-run-name: Promote ${{ inputs.release_bundle_version }} to ${{ inputs.target_env }}
+name: Global Variable Demo
+
 on:
   workflow_dispatch:
-    inputs:
-      target_env:
-        description: "Target environment to promote the bundle to"
-        required: true
-        default: "QA"
-        type: choice
-        options:
-          - DEV
-          - QA
-          - UAT
-          - PROD
-      release_bundle_version:
-        description: "Version of the release bundle"
-        required: true
-        type: string
+
 jobs:
-  build:
+  demo-global-variables:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Test
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Initialize a "global" variable using GITHUB_ENV
+      - name: Initialize counter
         run: |
-          echo "Promote ${{ inputs.release_bundle_version }} to ${{ inputs.target_env }}"
+          echo "COUNTER=0" >> $GITHUB_ENV
+          echo "BUILD_STATUS=pending" >> $GITHUB_ENV
+          echo "Initialized COUNTER to 0"
+          echo "Initialized BUILD_STATUS to pending"
+      
+      # First step modifies the counter
+      - name: Increment counter (Step 1)
+        run: |
+          NEW_VALUE=$((COUNTER + 1))
+          echo "COUNTER=$NEW_VALUE" >> $GITHUB_ENV
+          echo "Step 1: Counter incremented to $NEW_VALUE"
+      
+      # Second step also modifies the counter
+      - name: Increment counter (Step 2)
+        run: |
+          NEW_VALUE=$((COUNTER + 5))
+          echo "COUNTER=$NEW_VALUE" >> $GITHUB_ENV
+          echo "Step 2: Counter incremented by 5 to $NEW_VALUE"
+      
+      # Modify the status variable
+      - name: Update build status
+        run: |
+          echo "BUILD_STATUS=in-progress" >> $GITHUB_ENV
+          echo "Updated BUILD_STATUS to in-progress"
+      
+      # Third step modifies counter again
+      - name: Increment counter (Step 3)
+        run: |
+          NEW_VALUE=$((COUNTER * 2))
+          echo "COUNTER=$NEW_VALUE" >> $GITHUB_ENV
+          echo "Step 3: Counter doubled to $NEW_VALUE"
+      
+      # Update status to complete
+      - name: Complete build
+        run: |
+          echo "BUILD_STATUS=complete" >> $GITHUB_ENV
+          echo "Updated BUILD_STATUS to complete"
+      
+      # Display final values
+      - name: Display final values
+        run: |
+          echo "=== Final Values ==="
+          echo "Counter: $COUNTER"
+          echo "Build Status: $BUILD_STATUS"
+          echo "==================="
+      
+      # Use the final counter value in a conditional
+      - name: Check if counter is high
+        if: env.COUNTER > 10
+        run: |
+          echo "Counter value ($COUNTER) is greater than 10!"
+      
+      # Demonstrate using the variable in another action
+      - name: Create summary
+        run: |
+          echo "## Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Final Counter Value:** $COUNTER" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Status:** $BUILD_STATUS" >> $GITHUB_STEP_SUMMARY
