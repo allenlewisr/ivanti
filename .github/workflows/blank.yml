@@ -9,8 +9,11 @@ jobs:
     steps:
       - name: S1
         run: |
-          echo "Z=Zebra" >> $GITHUB_ENV
-          echo $Z
+          for x in ab bc cd de; do
+            Z="$Z\n$x"
+            echo -n $Z
+          done
+          echo "Z=$Z" >> $GITHUB_ENV
 
       - name: S2
         run: echo $Z
