@@ -1,42 +1,16 @@
-name: Global Variable Demo
-
+name: GitHub Env Test
 on:
   workflow_dispatch:
-    inputs:
-      e1:
-        type: boolean
-        default: false
-      e2:
-        type: boolean
-        default: false
 
 jobs:
-  demo-global-variables:
+  env-test:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Check E1
+      - name: S1
         run: |
-          echo "SUMMARY=" >> $GITHUB_ENV
+          echo "Z=Zebra" >> $GITHUB_ENV
+          echo $Z
 
-          if ${{ inputs.e1 }}; then
-            echo "SUMMARY=$SUMMARY\nE1" >> $GITHUB_ENV
-            echo "ERROR=1" >> $GITHUB_ENV
-          fi
-
-      - name: Check E2
-        run: |
-          if ${{ inputs.e2 }}; then
-            echo "SUMMARY=$SUMMARY\nE2" >> $GITHUB_ENV
-            echo "ERROR=1" >> $GITHUB_ENV
-          fi
-
-      - name: Summary
-        run: |
-          if [[ $ERROR -eq 1 ]]; then
-            echo "Error occurred during execution"
-          fi
-          echo -e "$SUMMARY"
+      - name: S2
+        run: echo $Z
